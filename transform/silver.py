@@ -4,7 +4,10 @@ import json
 import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
+
 import pandas as pd
+
+
 def read_xml_bytes(path):
     path = Path(path)
     if path.suffix == '.zip':
@@ -12,54 +15,74 @@ def read_xml_bytes(path):
             return archive.read(archive.namelist()[0])
     return path.read_bytes()
 
+
 def parse_xml(xml_bytes):
+    """One row per station and fuel price. Station fields repeat on each price row."""
     rows = []
-    for _, element in ET.iterparse(io.BytesIO(xml_bytes), events=('end',)):
-        if element.tag != 'pdv':
+    for _, station in ET.iterparse(io.BytesIO(xml_bytes), events=('end',)):
+        if station.tag != 'pdv':
             continue
-    
-    station = {
-        'station_id': element.get('id'),
-        'postal_code': element.get('cp'),
-        'city': (element.findtext('ville') or '').strip().upper(),
-        'address': (element.findtext('adresse') or '').strip(),
-        'latitude': element.get('latitude'),
-        'longitude': element.get('longitude'),
+
+        horaires = station.find('horaires')
+        services = '|'.join(
+            s.text.strip() for s in station.findall('services/service') if s.text
+        )
+        base = {
+            'station_id': station.get('id'),
+            'latitude': station.get('latitude'),
+            'longitude': station.get('longitude'),
+            'cp': station.get('cp'),
+            'pop': station.get('pop'),
+            'adresse': (station.findtext('adresse') or '').strip(),
+            'ville': (station.findtext('ville') or '').strip(),
+            'automate_24_24': horaires is not None and 'automate-24-24' in horaires.attrib,
+            'services': services,
         }
-    for price in element.findall('prix'):
-        rows.append({
-         **station,
-        'fuel_id': price.get('id'),
-        'fuel_name': price.get('nom'),
-        'price_updated_at': price.get('maj'),
-        'price_eur': price.get('valeur'),
-        })
-        element.clear()
+
+        for price in station.findall('prix'):
+            rows.append({
+                **base,
+                'fuel_id': price.get('id'),
+                'fuel_name': price.get('nom'),
+                'maj': price.get('maj'),
+                'valeur': price.get('valeur'),
+            })
+        station.clear()
+
     return pd.DataFrame(rows)
 
-# validation file
+# below = validation file
 def clean(df):
     stats = {'rows_in': len(df)}
     df = df.copy()
-    df['price_eur'] = pd.to_numeric(df['price_eur'], errors='coerce')
-    df['price_updated_at'] = pd.to_datetime(df['price_updated_at'],errors='coerce')
 
+    # Coordinates are stored times 100000, as integers or decimals.
     for column in ('latitude', 'longitude'):
         df[column] = pd.to_numeric(df[column], errors='coerce') / 100000
-    required = ['station_id', 'fuel_id', 'price_eur', 'price_updated_at']
+
+    df['price_eur'] = pd.to_numeric(df['valeur'], errors='coerce')
+    df['maj'] = pd.to_datetime(df['maj'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
+    df = df.drop(columns=['valeur'])
+
+    required = ['station_id', 'fuel_id', 'price_eur', 'maj']
     before = len(df)
     df = df.dropna(subset=required)
     stats['rejected_missing_values'] = before - len(df)
+
     before = len(df)
     df = df[(df['price_eur'] > 0) & (df['price_eur'] < 5)]
     stats['rejected_price_out_of_range'] = before - len(df)
+
     before = len(df)
-    df = df.drop_duplicates(subset=['station_id', 'fuel_id','price_updated_at'])
+    df = df.drop_duplicates(subset=['station_id', 'fuel_id', 'maj'])
     stats['duplicates_removed'] = before - len(df)
+
     stats['rows_out'] = len(df)
     return df, stats
 
-# The output path depends only on the run date, so rerunning a date replaces its partition and never duplicates rows
+
+# below = The output path depends only on the run date, so rerunning a date replaces its partition and never duplicates rows
+
 def run(run_date, input_path=None, base_dir='data'):
     base = Path(base_dir)
     if input_path is None:
