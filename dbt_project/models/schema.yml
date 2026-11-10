@@ -1,0 +1,37 @@
+version: 2
+
+models:
+  - name: dim_stations
+    columns:
+      - name: station_id
+        data_tests: [unique, not_null]
+      - name: postal_code
+        data_tests: [not_null]
+
+  - name: dim_fuel_type
+    columns:
+      - name: fuel_id
+        data_tests: [unique, not_null]
+      - name: fuel_name
+        data_tests: [not_null]
+
+  - name: fact_prices
+    columns:
+      - name: price_key
+        data_tests: [unique, not_null]
+      - name: station_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_stations')
+              field: station_id
+      - name: fuel_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_fuel_type')
+              field: fuel_id
+          - accepted_values:
+              values: ['1', '2', '3', '4', '5', '6']
+      - name: price_eur
+        data_tests: [not_null]
