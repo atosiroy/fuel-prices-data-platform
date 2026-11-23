@@ -1,0 +1,21 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - run: ruff check .
+      - run: pytest -q
+      - name: Build Silver from the sample file
+        run: python -m transform.silver --date 2026-01-01 --input tests/fixtures/sample.xml
+      - name: Run dbt models and tests
+        run: dbt build --project-dir dbt_project --profiles-dir dbt_project
