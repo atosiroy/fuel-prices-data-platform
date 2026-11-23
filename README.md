@@ -1,6 +1,6 @@
 # French Fuel Prices Data Platform
 
-[![CI](https://github.com/atosiroy/fuel-prices-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/atosiroy/fuel-prices-platform/actions/workflows/ci.yml)
+[![CI](https://github.com/atosiroy/fuel-prices-data-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/atosiroy/fuel-prices-data-platform/actions/workflows/ci.yml)
 
 Daily ELT pipeline that ingests French open data on fuel prices, validates it, and models it into a star schema with dbt, DuckDB and Airflow.
 
