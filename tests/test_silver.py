@@ -47,3 +47,10 @@ def test_clean_rejects_missing_prices():
     cleaned, stats = clean(df)
     assert len(cleaned) == 0
     assert stats['rejected_missing_values'] == 1
+
+
+def test_clean_rejects_non_numeric_price():
+    df = pd.DataFrame([make_row(valeur='abc')])
+    cleaned, stats = clean(df)
+    assert len(cleaned) == 0
+    assert stats['rejected_missing_values'] == 1
