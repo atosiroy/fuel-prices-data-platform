@@ -1,7 +1,8 @@
 # French Fuel Prices Data Platform
 
-Daily ELT pipeline that ingests French open data on fuel prices,
-validates it, and models it into a star schema for analysis.
+[![CI](https://github.com/atosiroy/fuel-prices-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/atosiroy/fuel-prices-platform/actions/workflows/ci.yml)
+
+Daily ELT pipeline that ingests French open data on fuel prices, validates it, and models it into a star schema with dbt, DuckDB and Airflow.
 
 ## Architecture
 diagram image: source, Bronze, Silver, dbt on DuckDB, Airflow
@@ -19,7 +20,7 @@ diagram image: source, Bronze, Silver, dbt on DuckDB, Airflow
 - Known limit: the live feed is a snapshot, so history comes from the yearly archive.
 
 ## Results
-- 30954 rows processed, 0 rejected, 15 dbt tests passing, pipeline runs in 22 seconds
+- 30954 rows processed, 0 rejected, 12 dbt tests passing, pipeline runs in 34s seconds
 
 ## Next steps
 - Spark if volumes grow, object storage such as S3, alerting on failed runs
