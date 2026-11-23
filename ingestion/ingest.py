@@ -1,7 +1,8 @@
 import argparse
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
+
 import requests
 
 SOURCE_URL = 'https://donnees.roulez-eco.fr/opendata/instantane'
@@ -20,7 +21,7 @@ def ingest(run_date, base_dir='data', url=SOURCE_URL):
     meta = {
         'source': url,
         'run_date': run_date,
-        'ingested_at': datetime.now(timezone.utc).isoformat(),
+        'ingested_at': datetime.now(UTC).isoformat(),
         'bytes': len(response.content),
     }
 
@@ -29,7 +30,7 @@ def ingest(run_date, base_dir='data', url=SOURCE_URL):
 
 
 if __name__ == '__main__':
-    today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+    today = datetime.now(UTC).strftime('%Y-%m-%d')
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--date', default=today)
